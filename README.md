@@ -51,7 +51,7 @@ Note: Either mention `start_date` (& `end_date` in case it should not default to
 ```
 
 #### Output of data:
-![Example Image](images/data)
+![Example Image](images/data.png)
 
 #### Graphical Representation:
-![Example Image](images/graph)
+![Example Image](images/graph.png)
