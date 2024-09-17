@@ -1,3 +1,4 @@
+import datetime as dt
 import json
 
 import pandas as pd
@@ -8,8 +9,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
 
-def extract_table_data(stock_symbol):
-    url = f"https://finance.yahoo.com/quote/{stock_symbol}/history?"
+def extract_table_data(url: str) -> pd.DataFrame:
     driver = webdriver.Chrome()
     driver.get(url)
     try:
@@ -61,7 +61,7 @@ def get_url_from_input(input_file: str) -> str:
         if _key in keys:
             _input = input[_key]
             assert _input in list(_yh.keys())
-            return _yh[_key]
+            return _yh[_input]
         else:
             return _yh[_default]
 
@@ -74,16 +74,43 @@ def get_url_from_input(input_file: str) -> str:
     params["frequency"] = frequency
 
     if ("start_date" in keys) and ("end_date" in keys):
-        pass
-        # default start for max dt.datetime(1980,1,1).timestamp()
+        period1 = int(dt.datetime.strptime(input["start_date"], "%Y-%m-%d").timestamp())
+        period2 = int(dt.datetime.strptime(input["end_date"], "%Y-%m-%d").timestamp())
+        params["period1"] = period1
+        params["period2"] = period2
     elif "span" in keys:
-        pass
+        input_span = input["span"]
+        if input_span in ["5Y", "Max"]:
+            if input_span == "5Y":
+                period1 = int(
+                    (dt.datetime.today() - dt.timedelta(days=365 * 5)).timestamp()
+                )
+                period2 = int(dt.datetime.today().timestamp())
+                params["period1"] = period1
+                params["period2"] = period2
+            else:
+                period1 = int(dt.datetime(1980, 1, 1).timestamp())
+                period2 = int(dt.datetime.today().timestamp())
+                params["period1"] = period1
+                params["period2"] = period2
+        elif input_span in ["1D", "5D", "3M", "6M", "YTD", "1Y"]:
+            params["_span"] = input_span
+        else:
+            raise ValueError(f"incorrect span: {input_span}")
     else:
-        span = _param(
-            "span",
-        )
+        pass
 
-    return input
+    if "period1" in params:
+        url = f"https://finance.yahoo.com/quote/{params['symbol']}.{params['exchange']}/history?period1={params['period1']}&period2={params['period2']}&frequency={params['frequency']}"
+        df = extract_table_data(url)
+    elif "_span" in params:
+        url = f"https://finance.yahoo.com/quote/{params['symbol']}.{params['exchange']}/history?frequency={params['frequency']}"
+        df = extract_table_data(url)
+    else:
+        url = f"https://finance.yahoo.com/quote/{params['symbol']}.{params['exchange']}/history?frequency={params['frequency']}"
+        df = extract_table_data(url)
+    breakpoint()
+    return df
 
 
 if __name__ == "__main__":
@@ -94,9 +121,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("input_file", type=str, help="path to the input file")
     args = parser.parse_args()
-    input = get_url_from_input(args.input_file)
-    print(list(input.keys()))
-    breakpoint()
+    df = get_url_from_input(args.input_file)
 
 # Example usage
 # stock_symbol = "3MINDIA.NS"
