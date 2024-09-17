@@ -6,7 +6,7 @@ To fetch the data, run:
 ```
 python webscrape/webscrape.py example.json
 ```
-Here, `webscrape/webscrape.py` this is the python script that executes the webscraping and `example.json` is the system input. 
+Here, `webscrape/webscrape.py` this is the python script that executes the webscraping and `example.json` is the system input. On running the command, two files will be saved - the historical data in a csv format (eg: `INFY.csv`) for the stock and the corresponding html file for the graph (eg: `INFY.html`). 
 
 The input should be in a JSON format. 
 
@@ -49,3 +49,9 @@ Note: Either mention `start_date` (& `end_date` in case it should not default to
     "span": "Max" 
 }
 ```
+
+#### Output of data:
+![Example Image](images/data)
+
+#### Graphical Representation:
+![Example Image](images/graph)
