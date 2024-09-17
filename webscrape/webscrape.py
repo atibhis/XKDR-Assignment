@@ -2,7 +2,8 @@ import datetime as dt
 import json
 
 import pandas as pd
-import plotly.express as px
+import plotly.graph_objects as go
+from dateutil.relativedelta import relativedelta
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -34,7 +35,8 @@ def extract_table_data(url: str) -> pd.DataFrame:
         df["Date"] = pd.to_datetime(df["Date"], format="%b %d, %Y")
         df = df[~df.isnull().any(axis=1)]
         for col in ["Open", "High", "Low", "Close", "Adj Close", "Volume"]:
-            df[col] = pd.to_numeric(df[col].str.replace(",", ""))
+            df[col] = pd.to_numeric(df[col].str.replace(",", "").str.replace("-", ""))
+            # FIXME make this filtering moe robust
         return df
     except Exception as e:
         print(f"An error occurred: {e}")
@@ -73,9 +75,14 @@ def get_url_from_input(input_file: str) -> str:
     frequency = _param("frequency", yh_frequency, "Daily")
     params["frequency"] = frequency
 
-    if ("start_date" in keys) and ("end_date" in keys):
+    if "start_date" in keys:
         period1 = int(dt.datetime.strptime(input["start_date"], "%Y-%m-%d").timestamp())
-        period2 = int(dt.datetime.strptime(input["end_date"], "%Y-%m-%d").timestamp())
+        if "end_date" in keys:
+            period2 = int(
+                dt.datetime.strptime(input["end_date"], "%Y-%m-%d").timestamp()
+            )
+        else:
+            period2 = int(dt.datetime.now().timestamp())
         params["period1"] = period1
         params["period2"] = period2
     elif "span" in keys:
@@ -89,14 +96,16 @@ def get_url_from_input(input_file: str) -> str:
                 params["period1"] = period1
                 params["period2"] = period2
             else:
-                period1 = int(dt.datetime(1980, 1, 1).timestamp())
+                period1 = int(dt.datetime(1980, 1, 1).timestamp())  # assumed period1
                 period2 = int(dt.datetime.today().timestamp())
                 params["period1"] = period1
                 params["period2"] = period2
         elif input_span in ["1D", "5D", "3M", "6M", "YTD", "1Y"]:
             params["_span"] = input_span
         else:
-            raise ValueError(f"incorrect span: {input_span}")
+            raise ValueError(
+                f"incorrect span: {input_span}, span should be one of 5Y, Max, 1D, 5D, 3M, 6M, YTD, 1Y"
+            )
     else:
         pass
 
@@ -106,11 +115,46 @@ def get_url_from_input(input_file: str) -> str:
     elif "_span" in params:
         url = f"https://finance.yahoo.com/quote/{params['symbol']}.{params['exchange']}/history?frequency={params['frequency']}"
         df = extract_table_data(url)
+        max_date = df["Date"].max()
+        _span = params["_span"]
+        if _span == "1D":  # "1D", "5D", "3M", "6M", "YTD", "1Y"
+            df = df.head(1)
+        elif _span == "5D":
+            df = df[df["Date"] >= max_date - dt.timedelta(days=5)]
+        elif _span == "3M":
+            df = df[df["Date"] >= max_date - relativedelta(months=3)]
+        elif _span == "6M":
+            df = df[df["Date"] >= max_date - relativedelta(months=6)]
+        elif _span == "1Y":
+            df = df[df["Date"] >= max_date - relativedelta(months=12)]
+        elif _span == "YTD":
+            df = df[df["Date"] >= dt.datetime(max_date.year, 1, 1)]
+        else:
+            raise ValueError(_span)
     else:
         url = f"https://finance.yahoo.com/quote/{params['symbol']}.{params['exchange']}/history?frequency={params['frequency']}"
         df = extract_table_data(url)
-    breakpoint()
+    plot_and_save(df, params["symbol"])
     return df
+
+
+def plot_and_save(df: pd.DataFrame, symbol: str) -> None:
+    df.to_csv(f"{symbol}.csv", index=False)
+    fig = go.Figure(
+        data=[
+            go.Candlestick(
+                x=df["Date"],
+                open=df["Open"],
+                high=df["High"],
+                low=df["Low"],
+                close=df["Close"],
+            )
+        ]
+    )
+    fig.update_layout(title=f"{symbol}", yaxis_title="Stock Price", xaxis_title="Date")
+    fig.show()
+    fig.write_html(f"{symbol}.html")
+    return None
 
 
 if __name__ == "__main__":
@@ -122,27 +166,3 @@ if __name__ == "__main__":
     parser.add_argument("input_file", type=str, help="path to the input file")
     args = parser.parse_args()
     df = get_url_from_input(args.input_file)
-
-# Example usage
-# stock_symbol = "3MINDIA.NS"
-
-# df = extract_table_data(stock_symbol)
-# print(df)
-
-# if df is not None and not df.empty:
-#     print("DataFrame successfully created:")
-#     print(df.head())
-# else:
-#     print("No data to plot.")
-
-# # Plot if DataFrame is valid
-# if df is not None and not df.empty:
-#     # Create the line plot
-#     fig = px.line(
-#         df, x="Date", y="Close", title="Stock Closing Prices Over Time", markers=True
-#     )
-
-#     # Show the plot
-#     fig.show()
-# else:
-#     print("DataFrame is empty or not defined.")
