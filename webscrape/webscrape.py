@@ -36,7 +36,7 @@ def extract_table_data(url: str) -> pd.DataFrame:
         df = df[~df.isnull().any(axis=1)]
         for col in ["Open", "High", "Low", "Close", "Adj Close", "Volume"]:
             df[col] = pd.to_numeric(df[col].str.replace(",", "").str.replace("-", ""))
-            # FIXME make this filtering moe robust
+            # FIXME make this filtering more robust
         return df
     except Exception as e:
         print(f"An error occurred: {e}")
