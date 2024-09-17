@@ -50,8 +50,9 @@ Note: Either mention `start_date` (& `end_date` in case it should not default to
 }
 ```
 
-#### Output of data:
-![Example Image](images/data.png)
 
-#### Graphical Representation:
-![Example Image](images/graph.png)
+#### Output of saved data:
+![Data Image](images/data.png)
+
+#### Output of saved graph:
+![Graph Image](images/graph.png)
