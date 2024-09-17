@@ -20,7 +20,7 @@ The JSON objects should be:
 
 Note: Either mention `start_date` (& `end_date` in case it should not default to present day) or `span`. If both are provided, `start_date` would be implemented. 
 
-#### Examples:
+#### Examples of system input `example.json`:
 ```
 {
     "symbol": "INFY"
