@@ -13,3 +13,11 @@ The JSON objects should be:
 - `span` :   `1D`, `5D`, `3M`, `6M`, `YTD`, `1Y`, `5Y`, `Max` (default: `1Y`)
 
 Note: Either mention `start_date` (& `end_date` in case it should not default to present day) or `span`. If both are provided, `start_date` would be implemented. 
+
+#### Example JSON input 1:
+```
+{
+    "symbol": "INFY",
+    "start_date": "2022-01-01"
+}
+```
